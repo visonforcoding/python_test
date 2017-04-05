@@ -4,20 +4,31 @@ from pymongo import MongoClient
 from bs4 import BeautifulSoup
 import re
 import urllib.request
+import requests
 
 
 def scrapy(url):
+    baiduSpider = 'Mozilla/5.0 (compatible; Baiduspider/2.0; + http://www.baidu.com/search/spider.html)'
+    chrome = "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.87 Safari/537.36"
+    google = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
     headers = {
-        'Host': 'www.douban.com',
         'Accept': "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
         'Accept-Language': "zh-CN,zh;q=0.8",
-        'User-Agent': "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.87 Safari/537.36",
+        'User-Agent': chrome,
         'Connection': "keep-alive",
     }
-    req = urllib.request.Request(url,headers=headers)
+    print('scrapy:'+url)
+    req = urllib.request.Request(url, headers=headers)
     res = urllib.request.urlopen(req)
-    html = res.read()
-    return html.decode('utf-8')
+    print('返回页面地址:'+str(res.url))
+    if url == res.url:
+        html = res.read()
+        return html.decode('utf-8')
+    else:
+        html = login(url)
+        print(html)
+        return html
+
 
 
 def prase(html):
@@ -26,26 +37,24 @@ def prase(html):
     homepages = link.findall(html)
     for homepage in homepages:
         print('解析：' + homepage)
-        home_data = scrapy(homepage)
-        soup = BeautifulSoup(home_data, 'lxml')  # 获取soup对象
-        print(soup.select_one('title'))
-        #praseHomePage(homepage)
-        break
+        # home_data = scrapy(homepage)
+        # soup = BeautifulSoup(home_data, 'lxml')  # 获取soup对象
+        # print(soup.select_one('title'))
+        douban_user = praseHomePage(homepage)
+        print(douban_user)
 
 
 def praseWithSoup(html):
     soup = BeautifulSoup(html, 'lxml')
     print(soup.title.string)
 
+
 def praseHomePage(homepage):
     douban_user = {}
     douban_user['homepage'] = homepage
-    print(homepage)
     home_data = scrapy(homepage)
     soup = BeautifulSoup(home_data, 'lxml')  # 获取soup对象
     print(soup.select_one('title'))
-    print(soup.select_one('div.info'))
-    return
 
     nick_tag = soup.select('div.info h1')
     nick = str(nick_tag[0].contents[0]).strip()  # 获取昵称
@@ -86,22 +95,43 @@ def praseHomePage(homepage):
     douban_user['follower'] = follower
 
     movies_tag = soup.select('#movie span.pl a')
-    want_movie_str = str(movies_tag[1].string).strip()  # 想看电影
+    if len(movies_tag)==2:
+        want_index = 0
+    elif len(movies_tag)==3:
+        want_index = 1
+    elif len(movies_tag)==0:
+        douban_user['want_movie'] = 0
+        douban_user['saw_movie'] = 0
+        return douban_user
+    want_movie_str = str(movies_tag[want_index].string).strip()  # 想看电影
     want_movie_re = re.search('([0-9]+)部', want_movie_str)
     want_movie = want_movie_re.groups()[0]
     douban_user['want_movie'] = want_movie
-
-    saw_movie_str = str(movies_tag[2].string).strip()  # 想看电影
+    saw_movie_str = str(movies_tag[want_index+1].string).strip()  # 想看电影
     saw_movie_re = re.search('([0-9]+)部', saw_movie_str)
     saw_movie = saw_movie_re.groups()[0]
     douban_user['saw_movie'] = saw_movie
-    print(douban_user)
+    return douban_user
+    # print(douban_user)
 
+def login(redir):
+    login_url = 'https://www.douban.com/accounts/login'
+    data = {
+        'redir': redir,
+        'form_email':'18316629973',
+        'form_password':'passwd',
+        'login':'登录'
+    }
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36'}
+    r = requests.post(login_url, data=data,verify=False,headers=headers)
+    return r.text
 # res = scrapy('https://www.douban.com/explore/')
 # print(res)
 # prase(res)
 # prase(res)
 
-res = scrapy('https://www.douban.com/people/155709891/')
-print(res)
+res = scrapy('https://www.douban.com/explore/')
+prase(res)
 # praseHomePage(res)
+# login()
