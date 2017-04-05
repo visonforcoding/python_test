@@ -26,7 +26,6 @@ def scrapy(url):
         return html.decode('utf-8')
     else:
         html = login(url)
-        print(html)
         return html
 
 
@@ -119,7 +118,7 @@ def login(redir):
     data = {
         'redir': redir,
         'form_email':'18316629973',
-        'form_password':'passwd',
+        'form_password':'cwp348462402',
         'login':'登录'
     }
     headers = {
