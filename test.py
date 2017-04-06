@@ -9,3 +9,8 @@ print(m.hexdigest())
 #res = requests.get('https://github.com', verify=True)
 
 #print(res)
+a = '123'
+def foo():
+    print(a)
+
+foo()
