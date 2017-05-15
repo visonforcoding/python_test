@@ -1,0 +1,21 @@
+{
+  "name": "tornado-demo",
+  "homepage": "https://github.com/visonforcoding/python_test",
+  "authors": [
+    "visonforcoding <caowenpeng1990@126.om>"
+  ],
+  "description": "",
+  "main": "",
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "static/dist",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "zui": "^1.6.0"
+  }
+}
