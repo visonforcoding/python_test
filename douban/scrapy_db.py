@@ -3,14 +3,22 @@ from bs4 import BeautifulSoup
 import urllib.request
 import requests
 from PIL import Image
+from fake_useragent import  UserAgent
 import sys
 import re
+import random
+import time
 
 
 start_page = 'https://www.douban.com/people/fengs/'
 
 #登录
 s = requests.session()
+
+proxies = {
+  "http": "http://1.27.202.173",
+  "https": "http://1.27.202.173",
+}
 
 login_url = 'https://www.douban.com/accounts/login'
 # username = input('请输入手机号或者邮箱:')
@@ -23,11 +31,13 @@ data = {
     'form_password': passwd,
     'login': '登录'
 }
+ua = UserAgent()
 headers = {
+    # 'User-Agent': ua.random
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36'}
 # r = requests.post(login_url, data=data, verify=False, headers=headers)
 
-r = s.post(login_url,data=data,verify=False,headers=headers)
+r = s.post(login_url,data=data,verify=True,headers=headers,proxies=proxies)
 
 #获取图片验证码
 soup = BeautifulSoup(r.text,'lxml')
@@ -44,9 +54,10 @@ if captcha != None:
     data['captcha-solution'] = vcode
     data['captcha-id'] = captchaId
     #再次请求
-    r = s.post(login_url,data=data,verify=False,headers=headers)
+    r = s.post(login_url,data=data,verify=True,headers=headers)
 
 if r.url != start_page:
+    print(r.text)
     sys.exit('登录错误!')
 else:
     print('登入成功!')
@@ -119,17 +130,31 @@ def praseHomePage(homepage):
 home_user = praseHomePage(r)
 #解析follower_link
 
-def praseFollowerPage(follower_page,s):
+def praseFollowerPage(follower_page):
     r = s.get(follower_page)
     follower_soup = BeautifulSoup(r.text,'lxml')
-    follower_items = follower_soup.select('dl.obu a')
+    follower_items = follower_soup.select('dl.obu a.nbg')
+    page_tag = follower_soup.select_one('span.thispage')
+    total_page = page_tag['data-total-page']
+    this_page  = page_tag.string
+    print(this_page)
 
     for follower in follower_items:
-        follower_homepage = follower['href']
-        follower_user = praseHomePage(s.get(follower_homepage))
-        praseFollowerPage(follower_user['follower_link'],s)
+        print(follower['href'])
+        time.sleep(random.randrange(5))
+        # follower_homepage = follower['href']
+        # print(follower_homepage)
+        # follower_user = praseHomePage(s.get(follower_homepage))
+        # praseFollowerPage(follower_user['follower_link'],s)
+    while this_page <= total_page:
+        netx_page = re.sub(r'(.*=)(\d+)',r'\1',follower_page)+str(int(this_page)*70)
+        print(netx_page)
+        praseFollowerPage(netx_page)
+    else:
+        print('当前用户的关注者已遍历完')
 
-praseFollowerPage(home_user['follower_link'],s)
+
+praseFollowerPage(home_user['follower_link']+'?start=0')
 
 
 
